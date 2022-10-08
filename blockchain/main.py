@@ -52,27 +52,10 @@ def show_chain():
     return jsonify(response), 200
 
 
-@app.route('/chain/resolve', methods=['GET'])
-def dpos_consensus():
-    isReplaced = bchain.resolve_chain()
-
-    if isReplaced:
-        response = {
-            'message': 'This chain was replaced',
-            'new_chain': bchain.chain
-        }
-    else:
-        response = {
-            'message': 'This chain is authoritative',
-            'chain': bchain.chain
-        }
-    return jsonify(response), 200
-
-
 @app.route('/voting',methods=['GET'])
 def voting():
     if(port == 5000):
-        show_votes = bchain.give_vote()
+        show_votes = bchain.voting_power()
 
         response ={
             'message': 'Voting Results: ',
@@ -99,7 +82,7 @@ def delegates():
     return jsonify(response),200
 
 
-@app.route('/delegates/sync',methods=['GET'])
+@app.route('/delegates/synchro',methods=['GET'])
 def syncro_delegates():
     syncro_delegates = bchain.syncro()
 
