@@ -1,5 +1,3 @@
-# routes -> mine, delegates/sync, 
-
 
 from flask import Flask, jsonify, request
 
