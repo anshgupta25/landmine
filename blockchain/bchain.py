@@ -53,8 +53,8 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         
 
 
-    def calc_hash(self):
-        block_string = json.dumps(self.__dict__, sort_keys=True)
+    def calc_hash(self, block_info):
+        block_string = json.dumps(block_info.__dict__, sort_keys=True)
         return hashlib.sha256(block_string.encode()).hexdigest()
 
     def new_txn(self, buyer_ID,seller_ID, property_ID, amt):
@@ -94,9 +94,10 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         self.nodes.add((parsed_url.netloc,authority))
          
     def voting_power(self):
-        for x in self.nodes:
+        self.all_nodes = list(self.nodes)
+        for x in self.all_nodes:
             votepow= list(x)
-            votepow.append(x[0]*randint(0,10))
+            votepow.append(x[1]*randint(0,10))
             self.vote_grp.append(votepow)
             
         # print(self.vote_grp)
@@ -116,7 +117,7 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
     
     
     def synchro(self):
-        r = requests.get('http://localhost:5000/delegates/show')
+        r = requests.get('http://localhost:5000/show/delegates')
         print(r)
 
         if(r.status_code == 200):

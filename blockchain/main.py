@@ -1,10 +1,51 @@
 
+
 from flask import Flask, jsonify, request
 
 from bchain import Blockchain
 
 app = Flask(__name__)
 bchain = Blockchain()
+
+@app.route('/mine', methods=['GET'])
+def mine():
+    current_port = "localhost:"+ str(port)
+    if(current_port in bchain.delegates):
+        # response = {
+        #         'message': "New block mined!",
+        #         'index': "",
+        #         'transactions': "",
+        #         'previous_hash': ""
+        #     }
+        # return jsonify(response),200
+        if len(bchain.unverified_txn) >= 2:
+            last_block = bchain.last_block
+            previous_hash = bchain.calc_hash(last_block)
+            ver_txn = bchain.validate_txn()
+            block = bchain.add_block(previous_hash)
+            response = {
+                'message': "New block mined!",
+                'index': block['index'],
+                'transactions': block['transactions'],
+                'previous_hash': block['previous_hash']
+            }
+            print(len(bchain.unverified_txn))
+            return jsonify(response), 200
+
+        else:
+            response = {
+                'message' : 'Not enough transactions to mine a new block and add to chain!'
+            }
+            print(len(bchain.unverified_txn))
+            return jsonify(response),400
+
+    
+
+    else:
+        response = {
+            'message': 'You are not authorised to mine block! Only delegates can mine.'
+        }
+        return jsonify(response),400
 
 
 @app.route('/add/node', methods=['POST'])
@@ -91,39 +132,6 @@ def syncro_delegates():
     return jsonify(response),200
 
 
-@app.route('/mine', methods=['GET'])
-def mine():
-    current_port = "localhost:"+ str(port)
-    if(current_port in bchain.delegates):
-
-        if len(bchain.unverified_txn) >= 2:
-            last_block = bchain.last_block
-            previous_hash = bchain.calc_hash(last_block)
-            ver_txn = bchain.validate_txn()
-            block = bchain.add_block(previous_hash)
-            response = {
-                'message': "New block mined!",
-                'index': block['index'],
-                'transactions': block['transactions'],
-                'previous_hash': block['previous_hash']
-            }
-            print(len(bchain.unverified_txn))
-            return jsonify(response), 200
-
-        else:
-            response = {
-                'message' : 'Not enough transactions to mine a new block and add to chain!'
-            }
-            print(len(bchain.unverified_txn))
-            return jsonify(response),400
-
-    
-
-    else:
-        response = {
-            'message': 'You are not authorised to mine block! Only delegates can mine.'
-        }
-        return jsonify(response),400
 
 
 
