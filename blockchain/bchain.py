@@ -1,10 +1,13 @@
 from audioop import add
 import hashlib
 import json
+from typing import List
 from datetime import datetime as dt
 from urllib.parse import urlparse
 import requests
 from random import randint
+
+# from blockchain.main import delegates
 
 class Blockchain(object): #Blockchain with DPOS consensus algorithm
 
@@ -103,6 +106,7 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         # print(self.vote_grp)
         
     def delegates_selection(self):
+        self.delegates=[]
         self.star_grp = sorted(self.vote_grp, key = lambda vote: vote[2],reverse = True)
         # print(self.star_grp)
 
@@ -111,7 +115,8 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         # print(self.super_grp)
 
         for y in self.super_grp:
-            self.delegates.append(y[0])
+            if(y[0] not in self.delegates):
+                self.delegates.append(y[0])
             
         print(self.delegates)
     
@@ -124,3 +129,46 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
             delegates = r.json()['node_delegates']
             self.delegates = delegates[0:3]
             print(self.delegates)
+
+
+class Merkle_Node:
+    def __init__(self, left, right, value: str):
+        self.left: Merkle_Node = left
+        self.right: Merkle_Node = right
+        self.value = value
+
+    def doubleHash(val: str):
+        return Merkle_Node.hash(Merkle_Node.hash(val))
+
+class MerkleTree:
+    def __init__(self, values: List[str]):
+        self.__buildTree(values)
+
+    def __buildTree(self, values: List[str]):
+        leaves: List[Merkle_Node] = [Merkle_Node(None, None, Merkle_Node.doubleHash(e)) for e in values]
+        if len(leaves) % 2 == 1:
+            leaves.append(leaves[-1:][0]) # duplicate last elem if odd number of elements
+        self.root: Merkle_Node = self.__buildTreeRec(leaves)
+
+    def __buildTreeRec(self, nodes: List[Merkle_Node]):
+        half: int = len(nodes) // 2
+
+        if len(nodes) == 2:
+            return Merkle_Node(nodes[0], nodes[1], Merkle_Node.doubleHash(nodes[0].value + nodes[1].value))
+
+        left: Merkle_Node = self.__buildTreeRec(nodes[:half])
+        right: Merkle_Node = self.__buildTreeRec(nodes[half:])
+        value: str = Merkle_Node.doubleHash(left.value + right.value)
+        return Merkle_Node(left, right, value)
+
+    def printTree(self):
+        self.__printTreeRec(self.root)
+
+    def __printTreeRec(self, Merkle_Node):
+        if Merkle_Node != None:
+            print(Merkle_Node.value)
+            self.__printTreeRec(Merkle_Node.left)
+            self.__printTreeRec(Merkle_Node.right)
+
+    def getRootHash(self):
+        return self.root.value

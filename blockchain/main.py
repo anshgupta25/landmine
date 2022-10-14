@@ -93,6 +93,9 @@ def show_chain():
 
 @app.route('/voting',methods=['GET'])
 def voting():
+    bchain.vote_grp = []
+    bchain.star_grp = []
+    bchain.super_grp = []
     if(port == 5000):
         show_votes = bchain.voting_power()
 
@@ -112,6 +115,7 @@ def voting():
 
 @app.route('/show/delegates',methods=['GET'])
 def delegates():
+    bchain.delegates = []
     show_delegates = bchain.delegates_selection()
 
     response={
