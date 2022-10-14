@@ -135,7 +135,22 @@ def syncro_delegates():
     }
     return jsonify(response),200
 
-
+@app.route('/show/history',methods=['GET'])
+def history():
+    values = request.get_json()
+    required = 'Property_ID'
+    
+    # if not all(value in values for value in required):
+    #     return 'Please enter property_ID.', 400
+    
+    id = values[required]
+    
+    txns = bchain.txn_history(id)
+    response ={
+        'message': 'Transaction history: ',
+        'transactions_details': txns
+    }
+    return jsonify(response),200
 
 
 

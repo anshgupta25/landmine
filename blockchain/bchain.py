@@ -37,6 +37,8 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         #List to store the address of the delegate nodes selected for mining process
         self.delegates = []
         self.txn_hashes = []
+
+        self.txns = []
         
         self.add_block(previous_hash = 0)
 
@@ -52,9 +54,8 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         return block_info
 
     def validate_txn(self):
-        self.verified_txn.append(self.unverified_txn)
-        
-
+        for i in range(len(self.unverified_txn)):
+            self.verified_txn.append(self.unverified_txn[i])
 
     def calc_hash(self, block_info):
         block_string = json.dumps(block_info.__dict__, sort_keys=True)
@@ -72,7 +73,11 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         
         # return self.last_block['index'] + 1
 
-
+    def txn_history(self, prop_ID):
+        for i in range(len(self.verified_txn)):
+            if self.verified_txn[i]['Property ID'] == prop_ID:
+                self.txns.append(self.verified_txn[i])
+        return self.txns
 
     def last_block(self):
         return self.chain[-1]
