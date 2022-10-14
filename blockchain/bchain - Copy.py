@@ -1,6 +1,7 @@
 from audioop import add
 import hashlib
 import json
+from typing import List
 from datetime import datetime as dt
 from urllib.parse import urlparse
 import requests
@@ -16,7 +17,7 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         #List to store verified transactions
         self.verified_txn = []
 
-        #Set containing the nodes in the network. Used set here to prevent the same node getting added again.
+        #Set containing the nodes in the network. Used set here to prevent the same Merkle_Node getting added again.
         self.nodes = set()
 
         #List containing all the nodes along with their stake in the network
@@ -33,7 +34,6 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
 
         #List to store the address of the delegate nodes selected for mining process
         self.delegates = []
-        self.txn_hashes = []
         
         self.add_block(previous_hash = 0)
 
@@ -44,14 +44,8 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
                  'transactions': self.unverified_txn,
                  'previous_hash': previous_hash
                  }
-        self.chain.append(block_info)
-        self.unverified_txn = []
+        #self.chain.append(block_info)
         return block_info
-
-    def validate_txn(self):
-        self.verified_txn.append(self.unverified_txn)
-        
-
 
     def calc_hash(self):
         block_string = json.dumps(self.__dict__, sort_keys=True)
@@ -66,10 +60,7 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
             'Amount': amt,
             'timestamp': now.strftime('%Y-%m-%d %H:%M:%S')
         })
-        
-        # return self.last_block['index'] + 1
-
-
+        return self.last_block['index'] + 1
 
     def last_block(self):
         return self.chain[-1]
@@ -92,7 +83,8 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         parsed_url = urlparse(address)
         authority = stake
         self.nodes.add((parsed_url.netloc,authority))
-         
+        
+        
     def voting_power(self):
         for x in self.nodes:
             votepow= list(x)
@@ -123,3 +115,47 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
             delegates = r.json()['node_delegates']
             self.delegates = delegates[0:3]
             print(self.delegates)
+            
+            
+            
+class Merkle_Node:
+    def __init__(self, left, right, value: str):
+        self.left: Merkle_Node = left
+        self.right: Merkle_Node = right
+        self.value = value
+
+    def doubleHash(val: str):
+        return Merkle_Node.hash(Merkle_Node.hash(val))
+
+class MerkleTree:
+    def __init__(self, values: List[str]):
+        self.__buildTree(values)
+
+    def __buildTree(self, values: List[str]):
+        leaves: List[Merkle_Node] = [Merkle_Node(None, None, Merkle_Node.doubleHash(e)) for e in values]
+        if len(leaves) % 2 == 1:
+            leaves.append(leaves[-1:][0]) # duplicate last elem if odd number of elements
+        self.root: Merkle_Node = self.__buildTreeRec(leaves)
+
+    def __buildTreeRec(self, nodes: List[Merkle_Node]):
+        half: int = len(nodes) // 2
+
+        if len(nodes) == 2:
+            return Merkle_Node(nodes[0], nodes[1], Merkle_Node.doubleHash(nodes[0].value + nodes[1].value))
+
+        left: Merkle_Node = self.__buildTreeRec(nodes[:half])
+        right: Merkle_Node = self.__buildTreeRec(nodes[half:])
+        value: str = Merkle_Node.doubleHash(left.value + right.value)
+        return Merkle_Node(left, right, value)
+
+    def printTree(self):
+        self.__printTreeRec(self.root)
+
+    def __printTreeRec(self, Merkle_Node):
+        if Merkle_Node != None:
+            print(Merkle_Node.value)
+            self.__printTreeRec(Merkle_Node.left)
+            self.__printTreeRec(Merkle_Node.right)
+
+    def getRootHash(self):
+        return self.root.value

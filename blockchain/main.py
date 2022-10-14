@@ -28,12 +28,12 @@ def add_nodes():
 @app.route('/add/txn', methods=['POST'])
 def new_txn():
     values = request.get_json()
-    required = ['sender_ID', 'buyer_ID', 'property_ID']
+    required = ['sender_ID', 'buyer_ID', 'property_ID','amt']
 
     if not all(value in values for value in required):
-        return 'Please enter sender_id, buyer_ID and property_ID.', 400
+        return 'Please enter sender_id, buyer_ID, property_ID and amt.', 400
     
-    idx = bchain.new_txn(values['sender_ID'], values['buyer_ID'], values['property_ID'])
+    idx = bchain.new_txn(values['sender_ID'], values['buyer_ID'], values['property_ID'], values['amt'])
 
     response = {
         'message': f'Transaction will be added to block {idx}'
@@ -57,7 +57,7 @@ def voting():
 
         response ={
             'message': 'Voting Results: ',
-            'nodes': bchain.vote_group
+            'nodes': bchain.vote_grp
             }
         
         return jsonify(response),200
@@ -82,7 +82,7 @@ def delegates():
 
 @app.route('/sync/delegates',methods=['GET'])
 def syncro_delegates():
-    syncro_delegates = bchain.syncro()
+    syncro_delegates = bchain.synchro()
 
     response ={
         'message': 'The delegate nodes are: ',
@@ -91,7 +91,7 @@ def syncro_delegates():
     return jsonify(response),200
 
 
-@app.route('/mine/block', methods=['GET'])
+@app.route('/mine', methods=['GET'])
 def mine():
     current_port = "localhost:"+ str(port)
     if(current_port in bchain.delegates):
@@ -99,8 +99,8 @@ def mine():
         if len(bchain.unverified_txn) >= 2:
             last_block = bchain.last_block
             previous_hash = bchain.calc_hash(last_block)
-            block = bchain.create_block(previous_hash)
-
+            ver_txn = bchain.validate_txn()
+            block = bchain.add_block(previous_hash)
             response = {
                 'message': "New block mined!",
                 'index': block['index'],
@@ -116,6 +116,9 @@ def mine():
             }
             print(len(bchain.unverified_txn))
             return jsonify(response),400
+
+    
+
     else:
         response = {
             'message': 'You are not authorised to mine block! Only delegates can mine.'
