@@ -9,7 +9,7 @@ app = Flask(__name__)
 bchain = Blockchain()
 
 
-@app.route('/nodes/add', methods=['POST'])
+@app.route('/add/node', methods=['POST'])
 def add_nodes():
     values = request.get_json()
     required = ['nodes','stake']
@@ -27,7 +27,7 @@ def add_nodes():
     return jsonify(response), 201
 
 
-@app.route('/txn/new', methods=['POST'])
+@app.route('/add/txn', methods=['POST'])
 def new_txn():
     values = request.get_json()
     required = ['sender_ID', 'buyer_ID', 'property_ID']
@@ -43,7 +43,7 @@ def new_txn():
     return jsonify(response), 201
 
 
-@app.route('/chain', methods=['GET'])
+@app.route('/show_full_chain', methods=['GET'])
 def show_chain():
     response = {
         'chain': bchain.chain,
@@ -71,7 +71,7 @@ def voting():
         return jsonify(response),400
 
 
-@app.route('/delegates/show',methods=['GET'])
+@app.route('/show/delegates',methods=['GET'])
 def delegates():
     show_delegates = bchain.delegates_selection()
 
@@ -82,7 +82,7 @@ def delegates():
     return jsonify(response),200
 
 
-@app.route('/delegates/synchro',methods=['GET'])
+@app.route('/sync/delegates',methods=['GET'])
 def syncro_delegates():
     syncro_delegates = bchain.syncro()
 
@@ -93,7 +93,7 @@ def syncro_delegates():
     return jsonify(response),200
 
 
-@app.route('/mine', methods=['GET'])
+@app.route('/mine/block', methods=['GET'])
 def mine():
     current_port = "localhost:"+ str(port)
     if(current_port in bchain.delegates):
