@@ -10,38 +10,31 @@ from random import randint
 
 # from blockchain.main import delegates
 
-class Blockchain(object): #Blockchain with DPOS consensus algorithm
-
+class Blockchain(object): 
     def __init__(self):
-        self.chain = []
+        self.chain = [] #list for storing the full blockchain after mining
         
-        self.unverified_txn = []  
+        self.unverified_txn = []  #list for storing the transactions which need to be added to the block
 
-        #List to store verified transactions
-        self.verified_txn = []
+        self.verified_txn = [] #list of all the transaction verified till now
 
-        #Set containing the nodes in the network. Used set here to prevent the same node getting added again.
-        self.nodes = set()
+        self.nodes = set() # set of nodes i.e the miners / computers for mining/verificiation of blocks
 
-        #List containing all the nodes along with their stake in the network
-        self.all_nodes = []
+        self.all_nodes = [] #list of all nodes
 
-        #List of all the voting nodes in the network
-        self.vote_grp = []
+        self.vote_grp = [] #the voting group consisting of all the nodes
 
-        #List which stores all the nodes in descending order of votes received
-        self.star_grp = []
+        self.star_grp = [] #the group sorted in decreasing order of voting power
 
-        #List to store the top 3 nodes with the highest (stake * votes_received)
-        self.super_grp = []
+        self.super_grp = []# final group selected for delegates
 
-        #List to store the address of the delegate nodes selected for mining process
-        self.delegates = []
-        self.txn_hashes = []
+        self.delegates = [] #the delegates nodes of the blockchain
         
-        self.unverified_hash =[]
+        self.txn_hashes = [] #hash values of all the transactions
+        
+        self.unverified_hash =[] #list of unverified hashes
 
-        self.txns = []
+        self.txns = [] #list of all the transactions
         
         self.add_block(previous_hash = 0)
 
@@ -56,6 +49,7 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
                  }
         self.chain.append(block_info)
         self.unverified_txn = []
+        self.unverified_hash =[]
         return block_info
     
     def test(self):

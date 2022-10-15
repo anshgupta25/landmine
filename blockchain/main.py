@@ -121,7 +121,7 @@ def delegates():
 
     response={
         'message': 'The 3 delegate nodes selected for block mining are: ',
-        'node_delegates': bchain.delegates
+        'delegates': bchain.delegates
     }
     return jsonify(response),200
 
@@ -132,7 +132,7 @@ def syncro_delegates():
 
     response ={
         'message': 'The delegate nodes are: ',
-        'node_delegates': bchain.delegates
+        'delegates': bchain.delegates
     }
     return jsonify(response),200
 
