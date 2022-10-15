@@ -88,7 +88,8 @@ def show_chain():
         'chain': bchain.chain,
         'length': len(bchain.chain)
     }
-    return jsonify(response), 200
+    print(bchain.chain)
+    return response, 200
 
 
 @app.route('/voting',methods=['GET'])

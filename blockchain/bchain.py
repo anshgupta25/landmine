@@ -1,4 +1,5 @@
 from audioop import add
+import errno
 import hashlib
 import json
 from typing import List
@@ -37,42 +38,62 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
         #List to store the address of the delegate nodes selected for mining process
         self.delegates = []
         self.txn_hashes = []
+        
+        self.unverified_hash =[]
 
         self.txns = []
         
         self.add_block(previous_hash = 0)
 
     def add_block(self, previous_hash):
+        txn_hash_adding = self.test()
         now = dt.now()
         block_info = {'index': len(self.chain) + 1,
                  'timestamp': now.strftime("%d/%m/%Y %H:%M:%S"),
                  'transactions': self.unverified_txn,
-                 'previous_hash': previous_hash
+                 'previous_hash': previous_hash,
+                 'merkle_root': txn_hash_adding
                  }
         self.chain.append(block_info)
         self.unverified_txn = []
         return block_info
-
+    
+    def test(self):
+        elems = self.unverified_hash
+        mtree = MerkleTree(elems)
+        print (elems)
+        return mtree.getRootHash()
+        
     def validate_txn(self):
         for i in range(len(self.unverified_txn)):
             self.verified_txn.append(self.unverified_txn[i])
 
-    def calc_hash(self, block_info):
-        block_string = json.dumps(block_info.__dict__, sort_keys=True)
-        return hashlib.sha256(block_string.encode()).hexdigest()
+    
 
     def new_txn(self, buyer_ID,seller_ID, property_ID, amt):
         now = dt.now()
-        self.unverified_txn.append({
+        txn_info={
             'Buyer ID': buyer_ID,
             'Seller ID': seller_ID,
             'Property ID': property_ID,
             'Amount': amt,
             'timestamp': now.strftime('%Y-%m-%d %H:%M:%S')
-        })
+        }
+        self.unverified_txn.append(txn_info)
+        txn_hash_curr = self.calc_hash_txns(txn_info)
+        self.unverified_hash.append(txn_hash_curr)
         
         # return self.last_block['index'] + 1
 
+    
+    def calc_hash(self, block_info):
+        block_string = json.dumps(block_info.__dict__, sort_keys=True)
+        return hashlib.sha256(block_string.encode()).hexdigest()
+    
+    def calc_hash_txns(self, txn_info):
+        block_string = json.dumps(txn_info, sort_keys=True)
+        return hashlib.sha256(block_string.encode()).hexdigest()
+    
     def txn_history(self, prop_ID):
         for i in range(len(self.verified_txn)):
             if self.verified_txn[i]['Property ID'] == prop_ID:
@@ -136,44 +157,76 @@ class Blockchain(object): #Blockchain with DPOS consensus algorithm
             print(self.delegates)
 
 
-class Merkle_Node:
-    def __init__(self, left, right, value: str):
-        self.left: Merkle_Node = left
-        self.right: Merkle_Node = right
+class Node:
+    def __init__(self, left, right, value: str, content, is_copied=False) -> None:
+        self.left: Node = left
+        self.right: Node = right
         self.value = value
+        self.content = content
+        self.is_copied = is_copied
 
-    def doubleHash(val: str):
-        return Merkle_Node.hash(Merkle_Node.hash(val))
+    @staticmethod
+    def hash(val: str) -> str:
+        return hashlib.sha256(val.encode('utf-8')).hexdigest()
+
+    def __str__(self):
+        return (str(self.value))
+
+    def copy(self):
+        """
+        class copy function
+        """
+        return Node(self.left, self.right, self.value, self.content, True)
+
 
 class MerkleTree:
-    def __init__(self, values: List[str]):
+    def __init__(self, values: List[str]) -> None:
         self.__buildTree(values)
 
-    def __buildTree(self, values: List[str]):
-        leaves: List[Merkle_Node] = [Merkle_Node(None, None, Merkle_Node.doubleHash(e)) for e in values]
-        if len(leaves) % 2 == 1:
-            leaves.append(leaves[-1:][0]) # duplicate last elem if odd number of elements
-        self.root: Merkle_Node = self.__buildTreeRec(leaves)
+    def __buildTree(self, values: List[str]) -> None:
 
-    def __buildTreeRec(self, nodes: List[Merkle_Node]):
+        leaves: List[Node] = [Node(None, None, Node.hash(e), e) for e in values]
+        if len(leaves) % 2 == 1:
+            leaves.append(leaves[-1].copy())  # duplicate last elem if odd number of elements
+        self.root: Node = self.__buildTreeRec(leaves)
+
+    def __buildTreeRec(self, nodes: List[Node]) -> Node:
+        if(len(nodes)==0):
+            return
+        if len(nodes) % 2 == 1:
+            nodes.append(nodes[-1].copy())  # duplicate last elem if odd number of elements
         half: int = len(nodes) // 2
 
         if len(nodes) == 2:
-            return Merkle_Node(nodes[0], nodes[1], Merkle_Node.doubleHash(nodes[0].value + nodes[1].value))
+            return Node(nodes[0], nodes[1], Node.hash(nodes[0].value + nodes[1].value), nodes[0].content+"+"+nodes[1].content)
 
-        left: Merkle_Node = self.__buildTreeRec(nodes[:half])
-        right: Merkle_Node = self.__buildTreeRec(nodes[half:])
-        value: str = Merkle_Node.doubleHash(left.value + right.value)
-        return Merkle_Node(left, right, value)
+        left: Node = self.__buildTreeRec(nodes[:half])
+        right: Node = self.__buildTreeRec(nodes[half:])
+        value: str = Node.hash(left.value + right.value)
+        content: str = f'{left.content}+{right.content}'
+        return Node(left, right, value, content)
 
-    def printTree(self):
+    def printTree(self) -> None:
         self.__printTreeRec(self.root)
 
-    def __printTreeRec(self, Merkle_Node):
-        if Merkle_Node != None:
-            print(Merkle_Node.value)
-            self.__printTreeRec(Merkle_Node.left)
-            self.__printTreeRec(Merkle_Node.right)
+    def __printTreeRec(self, node: Node) -> None:
+        if node != None:
+            if node.left != None:
+                print("Left: "+str(node.left))
+                print("Right: "+str(node.right))
+            else:
+                print("Input")
+                
+            if node.is_copied:
+                print('(Padding)')
+            print("Value: "+str(node.value))
+            print("Content: "+str(node.content))
+            print("")
+            self.__printTreeRec(node.left)
+            self.__printTreeRec(node.right)
 
-    def getRootHash(self):
+    def getRootHash(self) -> str:
+        if(self.root == None):
+            return "0"
+        print(self.root)
         return self.root.value
