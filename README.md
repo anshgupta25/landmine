@@ -65,4 +65,5 @@ THe unverified transactions are then verified and unverified transaction list is
 Implemented by calculating final hash from all the transactions from the given block in the merkle root.
 This is stored in the block header.
 
+![](blockchain/images/show_chain.jpg)
 
