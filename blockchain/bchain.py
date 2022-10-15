@@ -38,17 +38,17 @@ class Blockchain(object):
         
         self.add_block(previous_hash = 0)
 
-    def add_block(self, previous_hash):
+    def add_block(self, previous_hash): # includes timestamp, previous_hash and merkle root as a part of block header
         txn_hash_adding = self.test()
         now = dt.now()
-        block_info = {'index': len(self.chain) + 1,
+        block_info = {'index': len(self.chain) + 1, # represnts index of block (position with 1 indexing) in linear blockchain 
                  'timestamp': now.strftime("%d/%m/%Y %H:%M:%S"),
-                 'transactions': self.unverified_txn,
+                 'transactions': self.unverified_txn, #list of transactions corresponding to the block
                  'previous_hash': previous_hash,
                  'merkle_root': txn_hash_adding
                  }
         self.chain.append(block_info)
-        self.unverified_txn = []
+        self.unverified_txn = [] #current list of unverified transactions verified, therefore emptied unverified transactions
         self.unverified_hash =[]
         return block_info
     
@@ -58,20 +58,20 @@ class Blockchain(object):
         print (elems)
         return mtree.getRootHash()
         
-    def validate_txn(self):
+    def validate_txn(self): #unverifed transactions corresponding to a block are verified
         for i in range(len(self.unverified_txn)):
             self.verified_txn.append(self.unverified_txn[i])
 
     
 
-    def new_txn(self, buyer_ID,seller_ID, property_ID, amt):
+    def new_txn(self, buyer_ID,seller_ID, property_ID, amt): #new transaction data for a particular property 
         now = dt.now()
         txn_info={
             'Buyer ID': buyer_ID,
             'Seller ID': seller_ID,
             'Property ID': property_ID,
             'Amount': amt,
-            'timestamp': now.strftime('%Y-%m-%d %H:%M:%S')
+            'timestamp': now.strftime("%d-%m-%Y %H:%M:%S")
         }
         self.unverified_txn.append(txn_info)
         txn_hash_curr = self.calc_hash_txns(txn_info)
@@ -80,24 +80,24 @@ class Blockchain(object):
         # return self.last_block['index'] + 1
 
     
-    def calc_hash(self, block_info):
+    def calc_hash(self, block_info): #hash calculated using SHA256 
         block_string = json.dumps(block_info.__dict__, sort_keys=True)
         return hashlib.sha256(block_string.encode()).hexdigest()
     
-    def calc_hash_txns(self, txn_info):
+    def calc_hash_txns(self, txn_info): # hash calculated for transactions as well for merkle root implementation
         block_string = json.dumps(txn_info, sort_keys=True)
         return hashlib.sha256(block_string.encode()).hexdigest()
     
-    def txn_history(self, prop_ID):
+    def txn_history(self, prop_ID): #list of transactions sorted by timestamp, corresponding to a particular PROPERTY_ID
         for i in range(len(self.verified_txn)):
             if self.verified_txn[i]['Property ID'] == prop_ID:
                 self.txns.append(self.verified_txn[i])
         return self.txns
 
-    def last_block(self):
+    def last_block(self): # most recently added block
         return self.chain[-1]
     
-    def is_chain_valid(self,chain):
+    def is_chain_valid(self,chain): # checking if every next block stores the correct "previous block hash"
         prev_block = chain[0]
         pos =1
         
@@ -116,11 +116,11 @@ class Blockchain(object):
         authority = stake
         self.nodes.add((parsed_url.netloc,authority))
          
-    def voting_power(self):
+    def voting_power(self): #adding voting for DPOS consensus algorithm by multiplying stake by a random value between 0 and 10
         self.all_nodes = list(self.nodes)
         for x in self.all_nodes:
             votepow= list(x)
-            votepow.append(x[1]*randint(0,10))
+            votepow.append(x[1]*randint(1,10))
             self.vote_grp.append(votepow)
             
         # print(self.vote_grp)
@@ -130,7 +130,7 @@ class Blockchain(object):
         self.star_grp = sorted(self.vote_grp, key = lambda vote: vote[2],reverse = True)
         # print(self.star_grp)
 
-        for x in range(3):
+        for x in range(3): # maximum of 3 delegates selected
             self.super_grp.append(self.star_grp[x])
         # print(self.super_grp)
 
@@ -151,10 +151,10 @@ class Blockchain(object):
             print(self.delegates)
 
 
-class Node:
+class Merkle_Node:
     def __init__(self, left, right, value: str, content, is_copied=False) -> None:
-        self.left: Node = left
-        self.right: Node = right
+        self.left: Merkle_Node = left
+        self.right: Merkle_Node = right
         self.value = value
         self.content = content
         self.is_copied = is_copied
@@ -170,21 +170,21 @@ class Node:
         """
         class copy function
         """
-        return Node(self.left, self.right, self.value, self.content, True)
+        return Merkle_Node(self.left, self.right, self.value, self.content, True)
 
 
-class MerkleTree:
+class MerkleTree: #Merkle tree to use merkle root as a block header attribute
     def __init__(self, values: List[str]) -> None:
-        self.__buildTree(values)
+        self.__build_MT(values)
 
-    def __buildTree(self, values: List[str]) -> None:
+    def __build_MT(self, values: List[str]) -> None:
 
-        leaves: List[Node] = [Node(None, None, Node.hash(e), e) for e in values]
+        leaves: List[Merkle_Node] = [Merkle_Node(None, None, Merkle_Node.hash(e), e) for e in values]
         if len(leaves) % 2 == 1:
             leaves.append(leaves[-1].copy())  # duplicate last elem if odd number of elements
-        self.root: Node = self.__buildTreeRec(leaves)
+        self.root: Merkle_Node = self.__buildRecursiveT(leaves)
 
-    def __buildTreeRec(self, nodes: List[Node]) -> Node:
+    def __buildRecursiveT(self, nodes: List[Merkle_Node]) -> Merkle_Node:
         if(len(nodes)==0):
             return
         if len(nodes) % 2 == 1:
@@ -192,18 +192,18 @@ class MerkleTree:
         half: int = len(nodes) // 2
 
         if len(nodes) == 2:
-            return Node(nodes[0], nodes[1], Node.hash(nodes[0].value + nodes[1].value), nodes[0].content+"+"+nodes[1].content)
+            return Merkle_Node(nodes[0], nodes[1], Merkle_Node.hash(nodes[0].value + nodes[1].value), nodes[0].content+"+"+nodes[1].content)
 
-        left: Node = self.__buildTreeRec(nodes[:half])
-        right: Node = self.__buildTreeRec(nodes[half:])
-        value: str = Node.hash(left.value + right.value)
+        left: Merkle_Node = self.__buildRecursiveT(nodes[:half])
+        right: Merkle_Node = self.__buildRecursiveT(nodes[half:])
+        value: str = Merkle_Node.hash(left.value + right.value)
         content: str = f'{left.content}+{right.content}'
-        return Node(left, right, value, content)
+        return Merkle_Node(left, right, value, content)
 
     def printTree(self) -> None:
-        self.__printTreeRec(self.root)
+        self.__printRecursiveT(self.root)
 
-    def __printTreeRec(self, node: Node) -> None:
+    def __printRecursiveT(self, node: Merkle_Node) -> None:
         if node != None:
             if node.left != None:
                 print("Left: "+str(node.left))
@@ -216,11 +216,11 @@ class MerkleTree:
             print("Value: "+str(node.value))
             print("Content: "+str(node.content))
             print("")
-            self.__printTreeRec(node.left)
-            self.__printTreeRec(node.right)
+            self.__printRecursiveT(node.left)
+            self.__printRecursiveT(node.right)
 
     def getRootHash(self) -> str:
         if(self.root == None):
             return "0"
         print(self.root)
-        return self.root.value
+        return self.root.value # Hash value calculated from all transactions in the block used as the root hash

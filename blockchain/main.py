@@ -8,7 +8,7 @@ app = Flask(__name__)
 bchain = Blockchain()
 
 @app.route('/mine', methods=['GET'])
-def mine():
+def mine(): 
     current_port = "localhost:"+ str(port)
     if(current_port in bchain.delegates):
         # response = {
@@ -18,11 +18,11 @@ def mine():
         #         'previous_hash': ""
         #     }
         # return jsonify(response),200
-        if len(bchain.unverified_txn) >= 2:
+        if len(bchain.unverified_txn) >= 2: #mining the block only if number of transactions exceed 2
             last_block = bchain.last_block
-            previous_hash = bchain.calc_hash(last_block)
-            ver_txn = bchain.validate_txn()
-            block = bchain.add_block(previous_hash)
+            previous_hash = bchain.calc_hash(last_block) #previous block hash included in the block header
+            ver_txn = bchain.validate_txn() #all the unverified transactions are verified and added to the block
+            block = bchain.add_block(previous_hash) 
             response = {
                 'message': "New block mined!",
                 'index': block['index'],
@@ -49,13 +49,14 @@ def mine():
 
 
 @app.route('/add/node', methods=['POST'])
-def add_nodes():
+def add_nodes(): #using API calls to add nodes the to the network
     values = request.get_json()
     required = ['nodes','stake']
     
     if not all(value in values for value in required):
         return 'Error',400
 
+    
     bchain.add_node(values['nodes'], values['stake'])
     
     response = {
@@ -67,7 +68,7 @@ def add_nodes():
 
 
 @app.route('/add/txn', methods=['POST'])
-def new_txn():
+def new_txn(): #new transactions using the given required attributes to enable property deal between parties 
     values = request.get_json()
     required = ['sender_ID', 'buyer_ID', 'property_ID','amt']
 
@@ -83,7 +84,7 @@ def new_txn():
 
 
 @app.route('/show_full_chain', methods=['GET'])
-def show_chain():
+def show_chain(): #prints entire blockchain chain
     response = {
         'chain': bchain.chain,
         'length': len(bchain.chain)
@@ -93,7 +94,7 @@ def show_chain():
 
 
 @app.route('/voting',methods=['GET'])
-def voting():
+def voting(): #API cals for voting for the delegates in the DPOS consensus algorithm
     bchain.vote_grp = []
     bchain.star_grp = []
     bchain.super_grp = []
@@ -115,7 +116,7 @@ def voting():
 
 
 @app.route('/show/delegates',methods=['GET'])
-def delegates():
+def delegates(): #maximum of 3 delgates for mining the block in blockchain
     bchain.delegates = []
     show_delegates = bchain.delegates_selection()
 
@@ -137,7 +138,7 @@ def syncro_delegates():
     return jsonify(response),200
 
 @app.route('/show/history',methods=['GET'])
-def history():
+def history(): #prints entire history corresponding to a given Property_ID
     values = request.get_json()
     required = 'Property_ID'
     
