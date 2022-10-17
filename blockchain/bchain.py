@@ -35,17 +35,25 @@ class Blockchain(object):
         self.unverified_hash =[] #list of unverified hashes
 
         self.txns = [] #list of all the transactions
-        
-        self.add_block(previous_hash = 0)
+
+        self.add_block(previous_hash = "0x4cd1e910c3d74780000000000000000000000000000000000000000000000000")
 
     def add_block(self, previous_hash): # includes timestamp, previous_hash and merkle root as a part of block header
         txn_hash_adding = self.test()
+        hashh = self.conv(txn_hash_adding,previous_hash)
         now = dt.now()
+        if len(self.chain) == 0:
+            x = "0x4cd1e910c3d74780000000000000000000000000000000000000000000000000"
+        else:
+            y = self.last_block()
+            x = y['hash']
         block_info = {'index': len(self.chain) + 1, # represnts index of block (position with 1 indexing) in linear blockchain 
                  'timestamp': now.strftime("%d/%m/%Y %H:%M:%S"),
-                 'transactions': self.unverified_txn, #list of transactions corresponding to the block
-                 'previous_hash': previous_hash,
-                 'merkle_root': txn_hash_adding
+                 'transactions': self.unverified_txn,
+                 'merkle_root': txn_hash_adding,#list of transactions corresponding to the block
+                 'hash': hashh,
+                 'previous_hash': x,
+                 
                  }
         self.chain.append(block_info)
         self.unverified_txn = [] #current list of unverified transactions verified, therefore emptied unverified transactions
@@ -62,6 +70,12 @@ class Blockchain(object):
         for i in range(len(self.unverified_txn)):
             self.verified_txn.append(self.unverified_txn[i])
 
+    def conv(self,txn,prev):
+        an_integer = int(txn, 16)
+        an_integer2 = int(prev, 16)
+        ans = an_integer ^ an_integer2 ^ 11011110111111111
+        hex_value = hex(ans)
+        return hex_value
     
 
     def new_txn(self, buyer_ID,seller_ID, property_ID, amt): #new transaction data for a particular property 
@@ -97,16 +111,17 @@ class Blockchain(object):
     def last_block(self): # most recently added block
         return self.chain[-1]
     
-    def is_chain_valid(self,chain): # checking if every next block stores the correct "previous block hash"
-        prev_block = chain[0]
-        pos =1
-        
-        while pos<len(chain):
-            block = chain[pos]
-            if(block['prev_hash']!=self.calc_hash(prev_block)):
-                return False
-            
-            prev_block = chain[++pos]
+    def is_chain_valid(self): # checking if every next block stores the correct "previous block hash"
+        prev_block = self.chain[0]
+        pos = 1
+        if(len(self.chain) == 1):
+            return True
+        while pos<len(self.chain):
+            block = self.chain[pos]
+            if(block['previous_hash']!=prev_block['hash']):
+                return False 
+            prev_block = self.chain[pos]
+            pos=pos+1
             
         return True
     
@@ -139,16 +154,39 @@ class Blockchain(object):
                 self.delegates.append(y[0])
             
         print(self.delegates)
+        
+    # def resolve_chain(self):
+    #     neighbours = self.nodes
+    #     new_chain = None
+    #     max_length = len(self.chain)
+
+    #     for node in neighbours: 
+    #         response = requests.get(f'http://{node}/chain')
+        
+    #         if response.status_code == 200:
+    #             length = response.json()['length']
+    #             chain = response.json()['chain']
+        
+    #             if length > max_length and self.is_chain_valid(chain):
+    #                 max_length = length
+    #                 new_chain = chain
+        
+    #     if new_chain:
+    #         self.chain = new_chain
+    #         return True
+
+    #     return False    
+   
     
-    
-    def synchro(self):
+    def broadcast(self):
         r = requests.get('http://localhost:5000/show/delegates')
         print(r)
 
         if(r.status_code == 200):
-            delegates = r.json()['node_delegates']
+            delegates = r.json()['delegates']
             self.delegates = delegates[0:3]
             print(self.delegates)
+            
 
 
 class Merkle_Node:

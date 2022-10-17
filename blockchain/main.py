@@ -1,5 +1,6 @@
 
 
+from urllib import response
 from flask import Flask, jsonify, request
 
 from bchain import Blockchain
@@ -127,15 +128,39 @@ def delegates(): #maximum of 3 delgates for mining the block in blockchain
     return jsonify(response),200
 
 
-@app.route('/sync/delegates',methods=['GET'])
+@app.route('/broadcast',methods=['GET'])
 def syncro_delegates():
-    syncro_delegates = bchain.synchro()
+    bdelegates = bchain.broadcast()
 
     response ={
         'message': 'The delegate nodes are: ',
         'delegates': bchain.delegates
     }
     return jsonify(response),200
+# @app.route('/chain/resolve', methods=['GET'])
+# def consensus():
+#     replaced = bchain.resolve_chain()
+
+#     if replaced:
+#         response = {
+#             'message': 'Our chain was replaced',
+#             'new_chain': bchain.chain
+#         }
+#     else:
+#         response = {
+#             'message': 'Our chain is authoritative',
+#             'chain': bchain.chain
+#         }
+#     return jsonify(response), 200
+
+
+@app.route('/chain/valid', methods = ['GET'])
+def is_chain():
+    res = bchain.is_chain_valid()
+    response={
+        'message': res
+    }
+    return jsonify(response) , 200
 
 @app.route('/show/history',methods=['GET'])
 def history(): #prints entire history corresponding to a given Property_ID
