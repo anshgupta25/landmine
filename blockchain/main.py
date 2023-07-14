@@ -23,7 +23,8 @@ def mine():
             last_block = bchain.last_block
             previous_hash = bchain.calc_hash(last_block) #previous block hash included in the block header
             ver_txn = bchain.validate_txn() #all the unverified transactions are verified and added to the block
-            block = bchain.add_block(previous_hash) 
+            block = bchain.add_block(previous_hash)
+             
             response = {
                 'message': "New block mined!",
                 'index': block['index'],
@@ -71,12 +72,12 @@ def add_nodes(): #using API calls to add nodes the to the network
 @app.route('/add/txn', methods=['POST'])
 def new_txn(): #new transactions using the given required attributes to enable property deal between parties 
     values = request.get_json()
-    required = ['sender_ID', 'buyer_ID', 'property_ID','amt']
+    required = ['buyer_ID','seller_ID', 'property_ID','rent']
 
     if not all(value in values for value in required):
-        return 'Please enter sender_id, buyer_ID, property_ID and amt.', 400
+        return 'Please enter buyer_ID,seller_ID, property_ID and rent.', 400
     
-    idx = bchain.new_txn(values['sender_ID'], values['buyer_ID'], values['property_ID'], values['amt'])
+    idx = bchain.new_txn(values['buyer_ID'], values['seller_ID'], values['property_ID'], values['rent'])
 
     response = {
         'message': f'Transaction will be added to block {idx}'
@@ -162,22 +163,41 @@ def is_chain():
     }
     return jsonify(response) , 200
 
-@app.route('/show/history',methods=['GET'])
-def history(): #prints entire history corresponding to a given Property_ID
+@app.route('/show/seller',methods=['GET'])
+def seller(): #prints entire history corresponding to a given Property_ID
     values = request.get_json()
-    required = 'Property_ID'
+    required = 'Seller_ID'
     
     # if not all(value in values for value in required):
     #     return 'Please enter property_ID.', 400
     
     id = values[required]
     
-    txns = bchain.txn_history(id)
+    txns_seller= bchain.show_seller(id)
     response ={
-        'message': 'Transaction history: ',
-        'transactions_details': txns
+        'message': 'Seller history: ',
+        'transactions_details': txns_seller
     }
     return jsonify(response),200
+
+
+@app.route('/show/buyer',methods=['GET'])
+def buyer(): #prints entire history corresponding to a given Property_ID
+    values = request.get_json()
+    required = 'Buyer_ID'
+    
+    # if not all(value in values for value in required):
+    #     return 'Please enter property_ID.', 400
+    
+    id = values[required]
+    
+    txns_buyer = bchain.show_buyer(id)
+    response ={
+        'message': 'Buyer history: ',
+        'transactions_details': txns_buyer
+    }
+    return jsonify(response),200
+
 
 
 

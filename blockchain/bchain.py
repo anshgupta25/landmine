@@ -7,69 +7,95 @@ from datetime import datetime as dt
 from urllib.parse import urlparse
 import requests
 from random import randint
+from largeprime import toret, find_generator, generate_large_prime
 
 # from blockchain.main import delegates
 
-class Blockchain(object): 
+
+class Blockchain(object):
     def __init__(self):
-        self.chain = [] #list for storing the full blockchain after mining
-        
-        self.unverified_txn = []  #list for storing the transactions which need to be added to the block
+        self.chain = []  # list for storing the full blockchain after mining
 
-        self.verified_txn = [] #list of all the transaction verified till now
+        # list for storing the transactions which need to be added to the block
+        self.unverified_txn = []
 
-        self.nodes = set() # set of nodes i.e the miners / computers for mining/verificiation of blocks
+        self.verified_txn = []  # list of all the transaction verified till now
 
-        self.all_nodes = [] #list of all nodes
+        # set of nodes i.e the miners / computers for mining/verificiation of blocks
+        self.nodes = set()
 
-        self.vote_grp = [] #the voting group consisting of all the nodes
+        self.all_nodes = []  # list of all nodes
 
-        self.star_grp = [] #the group sorted in decreasing order of voting power
+        self.vote_grp = []  # the voting group consisting of all the nodes
 
-        self.super_grp = []# final group selected for delegates
+        self.star_grp = []  # the group sorted in decreasing order of voting power
 
-        self.delegates = [] #the delegates nodes of the blockchain
-        
-        self.txn_hashes = [] #hash values of all the transactions
-        
-        self.unverified_hash =[] #list of unverified hashes
+        self.super_grp = []  # final group selected for delegates
 
-        self.txns = [] #list of all the transactions
+        self.delegates = []  # the delegates nodes of the blockchain
 
-        self.add_block(previous_hash = "0x4cd1e910c3d74780000000000000000000000000000000000000000000000000")
+        self.txn_hashes = []  # hash values of all the transactions
 
-    def add_block(self, previous_hash): # includes timestamp, previous_hash and merkle root as a part of block header
+        self.unverified_hash = []  # list of unverified hashes
+
+        self.txns_seller = []  # list of all the transactions
+        self.txns_buyer = []
+
+        self.mapping = {}
+
+        self.add_block(
+            previous_hash="0x4cd1e910c3d74780000000000000000000000000000000000000000000000000")
+
+    # includes timestamp, previous_hash and merkle root as a part of block header
+    def add_block(self, previous_hash):
         txn_hash_adding = self.test()
-        hashh = self.conv(txn_hash_adding,previous_hash)
+        hashh = self.conv(txn_hash_adding, previous_hash)
         now = dt.now()
         if len(self.chain) == 0:
             x = "0x4cd1e910c3d74780000000000000000000000000000000000000000000000000"
         else:
             y = self.last_block()
             x = y['hash']
-        block_info = {'index': len(self.chain) + 1, # represnts index of block (position with 1 indexing) in linear blockchain 
+        block_info = {'index': len(self.chain) + 1,  # represnts index of block (position with 1 indexing) in linear blockchain
                  'timestamp': now.strftime("%d/%m/%Y %H:%M:%S"),
                  'transactions': self.unverified_txn,
-                 'merkle_root': txn_hash_adding,#list of transactions corresponding to the block
+                 'merkle_root': txn_hash_adding,  # list of transactions corresponding to the block
                  'hash': hashh,
                  'previous_hash': x,
-                 
+
                  }
         self.chain.append(block_info)
-        self.unverified_txn = [] #current list of unverified transactions verified, therefore emptied unverified transactions
-        self.unverified_hash =[]
+        # current list of unverified transactions verified, therefore emptied unverified transactions
+        self.unverified_txn = []
+        self.unverified_hash = []
         return block_info
-    
+
     def test(self):
         elems = self.unverified_hash
         mtree = MerkleTree(elems)
-        print (elems)
+        print(elems)
         return mtree.getRootHash()
-        
-    def validate_txn(self): #unverifed transactions corresponding to a block are verified
-        for i in range(len(self.unverified_txn)):
-            self.verified_txn.append(self.unverified_txn[i])
 
+    def validate_txn(self):  # unverifed transactions corresponding to a block are verified
+        
+            for i in range(len(self.unverified_txn)):
+                prop_id = self.unverified_txn[i]['Property ID']
+                sell_id_prop= self.unverified_txn[i]['Seller ID']
+                sell_id = self.mapping[prop_id]
+                
+                p = generate_large_prime(20)
+                g  = find_generator(p)
+                x = prop_id
+                y = pow(g,x)%p
+                r = randint(0,p-2)
+                h = pow(g,r)%p 
+                b = randint(0,1)
+                s = (r+b*x)%(p-1)
+                alice = pow(g,s)%p
+                bob  = (h*pow(y,b))%p
+                if(alice == bob and sell_id == sell_id_prop):       
+                    self.verified_txn.append(self.unverified_txn[i])
+        
     def conv(self,txn,prev):
         an_integer = int(txn, 16)
         an_integer2 = int(prev, 16)
@@ -78,13 +104,18 @@ class Blockchain(object):
         return hex_value
     
 
-    def new_txn(self, buyer_ID,seller_ID, property_ID, amt): #new transaction data for a particular property 
+    def new_txn(self, buyer_ID,seller_ID, property_ID, rent): #new transaction data for a particular property 
         now = dt.now()
+        x = randint(1,1000)
+        y = randint(2000,3000)
+        self.mapping[property_ID] = seller_ID
+        print(self.mapping)
         txn_info={
+            'Transaction ID': x^y ,
             'Buyer ID': buyer_ID,
             'Seller ID': seller_ID,
             'Property ID': property_ID,
-            'Amount': amt,
+            'Amount': rent,
             'timestamp': now.strftime("%d-%m-%Y %H:%M:%S")
         }
         self.unverified_txn.append(txn_info)
@@ -102,11 +133,17 @@ class Blockchain(object):
         block_string = json.dumps(txn_info, sort_keys=True)
         return hashlib.sha256(block_string.encode()).hexdigest()
     
-    def txn_history(self, prop_ID): #list of transactions sorted by timestamp, corresponding to a particular PROPERTY_ID
+    def show_seller(self, prop_ID): #list of transactions sorted by timestamp, corresponding to a particular PROPERTY_ID
         for i in range(len(self.verified_txn)):
-            if self.verified_txn[i]['Property ID'] == prop_ID:
-                self.txns.append(self.verified_txn[i])
-        return self.txns
+            if self.verified_txn[i]['Seller ID'] == prop_ID:
+                self.txns_seller.append(self.verified_txn[i])
+        return self.txns_seller
+    
+    def show_buyer(self, prop_ID1): #list of transactions sorted by timestamp, corresponding to a particular PROPERTY_ID
+        for i in range(len(self.verified_txn)):
+            if self.verified_txn[i]['Buyer ID'] == prop_ID1:
+                self.txns_buyer.append(self.verified_txn[i])
+        return self.txns_buyer
 
     def last_block(self): # most recently added block
         return self.chain[-1]
